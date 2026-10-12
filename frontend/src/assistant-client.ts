@@ -20,12 +20,12 @@ export async function requestPublicAssistant(payload: {question:string; history?
  try {
   const origin = new URL(configured);
   if (origin.protocol !== 'https:' || origin.username || origin.password || origin.pathname !== '/' || origin.search || origin.hash) return maintenanceResponse();
-  const response = await fetch(new URL('/api/ask',origin).href,{method:'POST',headers:{'Content-Type':'application/json'},credentials:'omit',body:JSON.stringify(payload),signal:AbortSignal.timeout(100000)});
+  const response = await fetch(new URL('/api/ask',origin).href,{method:'POST',headers:{'Content-Type':'application/json'},credentials:'omit',body:JSON.stringify(payload),signal:AbortSignal.timeout(150000)});
   if (response.status===400 || response.status===422) throw new Error('422: Invalid question or conversation');
   if (!response.ok) return maintenanceResponse();
   const result = await response.json();
   if (result.status !== 'ok' || typeof result.answer !== 'string' || !result.answer.trim() || !Array.isArray(result.sources)) return maintenanceResponse();
-  return {answer:result.answer,sources:result.sources,mode:'assistant',status:'ok'};
+  return {answer:result.answer,sources:result.sources,mode:'assistant',status:'ok',...(typeof result.search_suggestions==='string'&&result.search_suggestions.length<=20000?{search_suggestions:result.search_suggestions}:{})};
  } catch(error) {
   if (error instanceof Error && error.message.startsWith('422:')) throw error;
   return maintenanceResponse();

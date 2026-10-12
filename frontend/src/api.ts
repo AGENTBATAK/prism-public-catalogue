@@ -9,8 +9,8 @@ export type RecordItem = {
 export type SearchResponse = { query: string; results: RecordItem[]; total: number };
 export type AskResponse = {
   answer: string | null; mode: string; notice?: string; query?: string; results?: RecordItem[]; total?: number;
-  sources?: { citation: number | string; document_name: string; location: string; excerpt: string; record_id?: string | null }[];
-  generation_model?: string | null; status?: 'ok' | 'maintenance';
+  sources?: { citation: number | string; document_name: string; location: string; excerpt: string; record_id?: string | null; url?: string }[];
+  generation_model?: string | null; status?: 'ok' | 'maintenance'; search_suggestions?: string;
 };
 export type Capabilities = { assistant: boolean; document_upload?: boolean };
 export type AssistantDocument = { id: string; display_name: string; kind: string; size_bytes: number; imported_at: string; status: string };
