@@ -1,3 +1,4 @@
+import { historyFromTurns, maintenanceResponse } from '../assistant-client';
 import { isPublicCatalogue, publicYearCounts } from '../public-catalogue';
 import { ChangeEvent, CSSProperties, FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, NavLink, Route, Routes, useNavigate, useParams, useSearchParams } from 'react-router';
@@ -63,10 +64,10 @@ function Header() {
     <header className="site-header">
       <Link to="/" className="brand" aria-label="PRISM — Polar Repository for Integrated Science and Media home"><img className="brand-logo" src={`${import.meta.env.BASE_URL}images/prism-logo-transparent.png?v=2`} alt="PRISM logo" /><span className="brand-name">PRISM<small>Polar Repository for Integrated Science and Media</small></span></Link>
       <nav className="main-nav" aria-label="Main navigation">
-        <NavLink to="/home">{t('home')}</NavLink><NavLink to="/stations"><MapPin size={15} />{t('stations')}</NavLink><NavLink to="/gallery"><GalleryHorizontal size={15} />{t('gallery')}</NavLink><NavLink to="/learn"><GraduationCap size={15} />{t('learn')}</NavLink><NavLink to="/library"><Library size={15} />{t('library')}</NavLink>{!isPublicCatalogue && <><NavLink to="/explore"><Search size={15} />{t('explore')}</NavLink><NavLink to="/ask">{t('ask')}</NavLink></>}
+        <NavLink to="/home">{t('home')}</NavLink><NavLink to="/stations"><MapPin size={15} />{t('stations')}</NavLink><NavLink to="/gallery"><GalleryHorizontal size={15} />{t('gallery')}</NavLink><NavLink to="/learn"><GraduationCap size={15} />{t('learn')}</NavLink><NavLink to="/library"><Library size={15} />{t('library')}</NavLink>{!isPublicCatalogue && <><NavLink to="/explore"><Search size={15} />{t('explore')}</NavLink></>}<NavLink to="/ask">{t('ask')}</NavLink>
         <button className="mobile-nav-more" type="button" aria-expanded={mobileMoreOpen} aria-controls="mobile-more-menu" onClick={() => setMobileMoreOpen((open) => !open)}><Menu size={16} />{t('more')}</button>
       </nav>
-      {mobileMoreOpen && <div id="mobile-more-menu" className="mobile-more-menu"><NavLink to="/library" onClick={() => setMobileMoreOpen(false)}><Library size={16} />{t('library')}</NavLink>{!isPublicCatalogue && <><NavLink to="/explore" onClick={() => setMobileMoreOpen(false)}><Search size={16} />{t('explore')}</NavLink><NavLink to="/ask" onClick={() => setMobileMoreOpen(false)}>{t('ask')}</NavLink><NavLink to="/graph" onClick={() => setMobileMoreOpen(false)}>{t('knowledgeGraph')}</NavLink><NavLink to="/status" onClick={() => setMobileMoreOpen(false)}>{t('status')}</NavLink></>}</div>}
+      {mobileMoreOpen && <div id="mobile-more-menu" className="mobile-more-menu"><NavLink to="/library" onClick={() => setMobileMoreOpen(false)}><Library size={16} />{t('library')}</NavLink>{!isPublicCatalogue && <><NavLink to="/explore" onClick={() => setMobileMoreOpen(false)}><Search size={16} />{t('explore')}</NavLink><NavLink to="/ask" onClick={() => setMobileMoreOpen(false)}>{t('ask')}</NavLink><NavLink to="/graph" onClick={() => setMobileMoreOpen(false)}>{t('knowledgeGraph')}</NavLink><NavLink to="/status" onClick={() => setMobileMoreOpen(false)}>{t('status')}</NavLink></>}<NavLink to="/ask" onClick={() => setMobileMoreOpen(false)}>{t('ask')}</NavLink></div>}
       <div className="header-right">
         {demos.data?.users.length ? <label className="demo-switch"><span>{profile.data?.user.role?.toUpperCase() || t('publicRole')}</span><select value={profile.data?.user.email || ''} aria-label={t('switchUser')} onChange={(event) => void switchUser(event.target.value)}><option value="">{t('publicRole')}</option>{demos.data.users.map((user) => <option key={user.email} value={user.email}>{user.name} · {user.role}</option>)}</select></label> : profile.data ? <div className="local-account"><span>{profile.data.user.name} · {profile.data.user.role}</span><button type="button" aria-label={t('signOut')} onClick={() => void switchUser('')}><LogOut size={14} />{t('signOut')}</button></div> : !isPublicCatalogue && !profile.isLoading && <Link className="header-signin" to="/login"><LogIn size={14} />{t('signIn')}</Link>}
         <DisplayTools />
@@ -704,12 +705,7 @@ function Ask() {
     }
     setQuestionError('');
     initialQuestionStarted.current = true;
-    const history: { role: 'user' | 'assistant'; content: string }[] = [];
-    for (const turn of turns) {
-      if (turn.role === 'user') history.push({ role: 'user', content: turn.content });
-      else if (turn.response?.answer) history.push({ role: 'assistant', content: turn.response.answer });
-    }
-    history.splice(0, Math.max(0, history.length - 12));
+    const history = historyFromTurns(turns);
     const requestVersion = chatVersion.current;
     setTurns((current) => [...current, { role: 'user', content: nextQuestion }]);
     setDraft('');
@@ -726,7 +722,8 @@ function Ask() {
       onError: (error) => {
         if (requestVersion !== chatVersion.current) return;
         const isHttpError = error instanceof Error && /^\d{3}:/.test(error.message);
-        setTurns((current) => [...current, { role: 'assistant', content: isHttpError ? t('askRequestFailed') : t('offline'), error: true }]);
+        const invalidInput = isHttpError && /^(400|422):/.test((error as Error).message);
+        setTurns((current) => [...current, invalidInput ? { role: 'assistant', content: t('askRequestFailed'), error: true } : { role: 'assistant', content: t('assistantMaintenance'), response: maintenanceResponse() }]);
       },
     });
   };
@@ -785,20 +782,20 @@ function Ask() {
         {turns.map((turn, index) => <div className={`chat-turn chat-turn-${turn.role}`} key={`${turn.role}-${index}`}>
           {turn.role === 'assistant' && <span className="chat-avatar" aria-hidden="true">P</span>}
           <div className="chat-bubble">
-            {turn.error ? <ErrorNotice message={turn.content} /> : turn.indexedDocument ? <div className="chat-indexed-file"><FileText size={18} /><span><strong>{turn.indexedDocument.document.display_name}</strong><small>{turn.indexedDocument.duplicate ? t('fileAlreadyIndexed') : t('fileIndexed')} · {turn.indexedDocument.document.kind}</small></span></div> : turn.response?.answer != null ? <p className="chat-answer">{turn.response.answer}</p> : <p>{turn.content}</p>}
+            {turn.error ? <ErrorNotice message={turn.content} /> : turn.indexedDocument ? <div className="chat-indexed-file"><FileText size={18} /><span><strong>{turn.indexedDocument.document.display_name}</strong><small>{turn.indexedDocument.duplicate ? t('fileAlreadyIndexed') : t('fileIndexed')} · {turn.indexedDocument.document.kind}</small></span></div> : turn.response?.answer != null ? <p className="chat-answer">{turn.response.status === 'maintenance' ? t('assistantMaintenance') : turn.response.answer}</p> : <p>{turn.content}</p>}
             {turn.response?.sources?.length ? <div className="chat-sources"><strong>{t('assistantSources')}</strong>{turn.response.sources.map((source, sourceIndex) => <div className="chat-source" key={`${source.document_name}-${source.citation}-${sourceIndex}`}><b>{source.citation}</b><span>{source.document_name} · {source.location}</span><p>{source.excerpt}</p></div>)}</div> : null}
             {turn.response?.results?.length ? <div className="chat-passages">{turn.response.results.map((record) => <article className="chat-passage" key={`${record.id}-${record.page_no}`}><div className="result-top"><Provenance type={record.provenance} /><span>{t('page')} {record.page_no}</span></div><strong>{record.title}</strong><p><HighlightedSnippet text={record.snippet} /></p><Link to={`/records/${record.id}?page=${record.page_no || 1}&q=${encodeURIComponent(record.title)}`}>{t('openHighlighted')} <ArrowRight size={14} /></Link></article>)}</div> : null}
             {turn.response?.answer === null && !turn.response.results?.length ? <p className="chat-no-results">{t('noResults')}</p> : null}
-            {turn.role === 'assistant' && turn.response?.answer != null && <button type="button" className="chat-copy-button" onClick={() => void copyAnswer(index, turn.response!.answer!)} title={copiedTurn === index ? t('copied') : t('copyReply')} aria-label={copiedTurn === index ? t('copied') : t('copyReply')}>{copiedTurn === index ? <Check size={14} /> : <Copy size={14} />}{copiedTurn === index && <span>{t('copied')}</span>}</button>}
+            {turn.role === 'assistant' && turn.response?.answer != null && turn.response.status !== 'maintenance' && <button type="button" className="chat-copy-button" onClick={() => void copyAnswer(index, turn.response!.answer!)} title={copiedTurn === index ? t('copied') : t('copyReply')} aria-label={copiedTurn === index ? t('copied') : t('copyReply')}>{copiedTurn === index ? <Check size={14} /> : <Copy size={14} />}{copiedTurn === index && <span>{t('copied')}</span>}</button>}
           </div>
         </div>)}
         {assistant.isPending && <div className="chat-turn chat-turn-assistant"><span className="chat-avatar" aria-hidden="true">P</span><div className="chat-bubble chat-pending">{capabilities.data?.assistant ? t('thinking') : t('searchingPassages')}</div></div>}
         <div ref={transcriptEnd} />
       </section>
-      <form className={`ask-form chat-composer${capabilities.data?.assistant ? ' has-upload-control' : ''}`} onSubmit={submit}>
+      <form className={`ask-form chat-composer${capabilities.data?.document_upload ? ' has-upload-control' : ''}`} onSubmit={submit}>
         <label className="sr-only" htmlFor="question">{t('questionPlaceholder')}</label>
         <input ref={fileInput} className="chat-file-input" type="file" accept=".pdf,.docx,.txt,.md,.markdown,.csv" onChange={onFileSelected} tabIndex={-1} aria-hidden="true" />
-        {capabilities.data?.assistant && <button className="chat-attach-button" type="button" title={t('attachDocument')} aria-label={t('attachDocument')} onClick={() => fileInput.current?.click()} disabled={upload.isPending || assistant.isPending}><Paperclip size={18} /></button>}
+        {capabilities.data?.document_upload && <button className="chat-attach-button" type="button" title={t('attachDocument')} aria-label={t('attachDocument')} onClick={() => fileInput.current?.click()} disabled={upload.isPending || assistant.isPending}><Paperclip size={18} /></button>}
         <textarea id="question" value={draft} maxLength={1000} aria-invalid={Boolean(questionError)} aria-describedby={questionError ? 'question-error' : 'composer-hint'} onChange={(event) => { setDraft(event.target.value); setQuestionError(''); }} onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); event.currentTarget.form?.requestSubmit(); } }} placeholder={capabilities.data?.assistant ? t('chatPlaceholder') : t('questionPlaceholder')} rows={2} />
         {questionError && <p className="chat-input-error" id="question-error" role="alert">{questionError}</p>}
         {uploadError && <p className="chat-upload-error" role="alert">{uploadError}</p>}
@@ -894,7 +891,7 @@ export default function App() {
   }, [theme, textScale, lang, profile.data?.user.email]);
   return <div className="app-shell"><Header /><Routes>
     <Route path="/" element={<Landing />} /><Route path="/home" element={isPublicCatalogue ? <LibraryPage /> : <Home />} /><Route path="/demo" element={isPublicCatalogue ? <PublicUnavailable /> : <FeatureDemo />} /><Route path="/stations" element={<StationsPage />} /><Route path="/gallery" element={<GalleryPage />} /><Route path="/learn" element={<LearnPage />} /><Route path="/library" element={<LibraryPage />} /><Route path="/login" element={isPublicCatalogue ? <PublicUnavailable /> : <LoginPage />} /><Route path="/explore" element={isPublicCatalogue ? <LibraryPage /> : <Explore />} />
-    <Route path="/ask" element={isPublicCatalogue ? <PublicUnavailable /> : <Ask />} /><Route path="/status" element={isPublicCatalogue ? <PublicUnavailable /> : <StatusPage />} /><Route path="/records/:id" element={isPublicCatalogue ? <PublicUnavailable /> : <Reader />} />
+    <Route path="/ask" element={<Ask />} /><Route path="/status" element={isPublicCatalogue ? <PublicUnavailable /> : <StatusPage />} /><Route path="/records/:id" element={isPublicCatalogue ? <PublicUnavailable /> : <Reader />} />
     <Route path="/trace/:recordId/:pageNo" element={isPublicCatalogue ? <PublicUnavailable /> : <TracePage />} /><Route path="/graph" element={isPublicCatalogue ? <PublicUnavailable /> : <GraphPage />} /><Route path="/studio/:libraryId" element={isPublicCatalogue ? <PublicUnavailable /> : <OutreachStudio />} />
     <Route path="*" element={<NotFound />} />
   </Routes><Footer /></div>;

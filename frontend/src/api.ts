@@ -10,9 +10,9 @@ export type SearchResponse = { query: string; results: RecordItem[]; total: numb
 export type AskResponse = {
   answer: string | null; mode: string; notice?: string; query?: string; results?: RecordItem[]; total?: number;
   sources?: { citation: number | string; document_name: string; location: string; excerpt: string; record_id?: string | null }[];
-  generation_model?: string | null;
+  generation_model?: string | null; status?: 'ok' | 'maintenance';
 };
-export type Capabilities = { assistant: boolean };
+export type Capabilities = { assistant: boolean; document_upload?: boolean };
 export type AssistantDocument = { id: string; display_name: string; kind: string; size_bytes: number; imported_at: string; status: string };
 export type AssistantDocumentUpload = { document: AssistantDocument; duplicate: boolean };
 export type Status = { api: string; database: string; mailpit: string; queue_depth: number; records: number; indexed_records?: number; catalogued_records?: number; authors?: number; expeditions?: number; scientific_domains?: number; pages: number; photos: number; ocr_pages: number; ocr_coverage: number; ai: string };

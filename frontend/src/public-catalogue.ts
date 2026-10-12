@@ -1,3 +1,4 @@
+import { requestPublicAssistant } from './assistant-client';
 import catalogue from './content/public-catalogue.json';
 import type { LibraryItem, LibraryResponse, StationDirectory } from './api';
 
@@ -57,9 +58,11 @@ function stations(): StationDirectory {
   }) };
 }
 export function publicCatalogueApi(path: string, init?: RequestInit): unknown {
+  if (new URL(path, 'https://prism.invalid').pathname === '/api/ask' && init?.method?.toUpperCase() === 'POST') return requestPublicAssistant(JSON.parse(String(init.body || '{}')));
   if (init?.method && init.method.toUpperCase() !== 'GET') throw new Error('This action requires the local app and is unavailable in the public catalogue.');
   const url = new URL(path, 'https://prism.invalid');
   switch (url.pathname) {
+    case '/api/capabilities': return {assistant:true,document_upload:false};
     case '/api/library': return library(url.searchParams);
     case '/api/stations': return stations();
     case '/api/status': return { api: 'static catalogue', database: 'not required', mailpit: 'disabled', queue_depth: 0, records: items.length, indexed_records: 0, catalogued_records: items.length, authors: unique(items.flatMap(item => item.authors.split(',').map(author => author.trim()).filter(Boolean))).length, expeditions: facets.expeditions.length, scientific_domains: facets.domains.length, pages: 0, photos: 0, ocr_pages: 0, ocr_coverage: 0, ai: 'disabled' };

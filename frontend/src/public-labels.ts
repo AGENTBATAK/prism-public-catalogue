@@ -12,7 +12,7 @@ export function applyPublicLabels() {
     galleryExpeditionsNote: 'Expedition numbers represented in the supplied catalogue.', galleryGrowth: 'Catalogue reports', galleryGrowthNote: 'Report years represented in the supplied catalogue.',
     stationDataNote: 'Profiles use published NCPOR information. Counts match station names in the supplied catalogue metadata.',
     stationsIntro: 'Explore India’s polar research bases and related reports from the source catalogue.',
-    localFeatureTitle: 'Available in the local PRISM app', localFeatureNotice: 'This public prototype supports catalogue browsing and original-source links. PDF indexing, OCR, document AI, sign-in and Story Forge require the local app.',
+    localFeatureTitle: 'Available in the local PRISM app', localFeatureNotice: 'This public prototype supports catalogue browsing and original-source links. PDF indexing, uploads, sign-in and Story Forge require the local app.',
   }, true, true);
   i18n.addResourceBundle('hi', 'translation', {
     publicCatalogueLabel: 'सार्वजनिक सूची', genericPdfCover: 'सामान्य कवर · PDF पृष्ठ का पूर्वावलोकन नहीं',
