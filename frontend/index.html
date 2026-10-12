@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en" data-theme="light" data-text="md">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f6f9fc" />
+    <meta name="description" content="PRISM — Polar Repository for Integrated Science and Media" />
+    <title>PRISM — Polar Repository for Integrated Science and Media</title>
+    <script>
+      try {
+        const p = JSON.parse(localStorage.getItem('prism-preferences') || '{}').state || {};
+        document.documentElement.dataset.theme = p.theme || 'light';
+        document.documentElement.dataset.text = p.textScale || 'md';
+        document.documentElement.lang = p.lang || 'en';
+      } catch (_) {}
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
