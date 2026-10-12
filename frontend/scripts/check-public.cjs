@@ -38,6 +38,7 @@ const assert = require('node:assert/strict');
   await page.goto(origin + '#/gallery');
   await page.locator('.gallery-tile button').first().click();
   await page.getByRole('dialog').waitFor();
+  await page.locator('.gallery-lightbox img').evaluate(img => img.decode());
   assert.equal(await page.locator('.gallery-lightbox img').evaluate(img => img.complete && img.naturalWidth > 0), true);
   await page.keyboard.press('Escape');
   await page.goto(origin + '#/learn');
