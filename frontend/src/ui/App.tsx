@@ -59,7 +59,7 @@ function Header() {
     } catch { setSwitchError('Demo login failed. Check that PRISM API is running.'); }
   };
   return <>
-    <a className="skip-link" href="#main">{t('skip')}</a>
+    <a className="skip-link" href="#main" onClick={isPublicCatalogue ? (event) => { event.preventDefault(); const main = document.getElementById('main'); if (main) { main.tabIndex = -1; main.focus(); main.scrollIntoView(); } } : undefined}>{t('skip')}</a>
     <header className="site-header">
       <Link to="/" className="brand" aria-label="PRISM — Polar Repository for Integrated Science and Media home"><img className="brand-logo" src={`${import.meta.env.BASE_URL}images/prism-logo-transparent.png?v=2`} alt="PRISM logo" /><span className="brand-name">PRISM<small>Polar Repository for Integrated Science and Media</small></span></Link>
       <nav className="main-nav" aria-label="Main navigation">
@@ -345,7 +345,7 @@ function LibraryPage() {
     <div className="eyebrow">PRISM / {t('library')}</div>
     <div className="library-title-row"><div><h1>{t('libraryTitle')}</h1><p>{t('libraryIntro')}</p></div><div className="library-count"><span>{response?.total.toLocaleString() ?? '—'}</span><small>{t('documents')}</small></div></div>
     {isPublicCatalogue && <div className="notice">{t('publicCatalogueNotice')}</div>}
-    <form className="search-box library-search" onSubmit={runSearch}><Search size={19} /><input name="q" defaultValue={q} placeholder={t('librarySearch')} aria-label={t('librarySearch')} /><button className="button button-pop">{t('search')}</button></form>
+    <form className="search-box library-search" onSubmit={runSearch}><Search size={19} /><input id="archive-search" name="q" defaultValue={q} placeholder={t('librarySearch')} aria-label={t('librarySearch')} /><button className="button button-pop">{t('search')}</button></form>
     {response && <div className="library-truth"><span className="status-dot" />{t('catalogCoverage', { indexed: response.facets.indexed_count.toLocaleString(), catalogued: response.facets.catalogued_count.toLocaleString() })}</div>}
     <div className="library-controls">
       <div className="library-filters">
