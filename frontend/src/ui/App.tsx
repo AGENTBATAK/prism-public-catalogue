@@ -1,4 +1,3 @@
-import {AssistantAnswer,SourceLink} from './AssistantAnswer';
 import { historyFromTurns, maintenanceResponse } from '../assistant-client';
 import { isPublicCatalogue, publicYearCounts } from '../public-catalogue';
 import { ChangeEvent, CSSProperties, FormEvent, useEffect, useMemo, useRef, useState } from 'react';
@@ -117,7 +116,7 @@ function Landing() {
         <h1>{index === 0 ? t('heroTitle') : panel.name}</h1>
         <p className="hero-copy">{index === 0 ? t('heroBody') : panel.body}</p>
         <div className="landing-actions"><Link className="button button-pop" to="/home">{t('enter')} <ArrowRight size={17} /></Link>{index === 2 && <Link className="text-link" to="/explore">{t('browseArchive')} <ArrowRight size={15} /></Link>}</div>
-        {index < panels.length - 1 && <a className="scroll-cue" href={`#station-${index + 1}`} onClick={isPublicCatalogue ? (event) => { event.preventDefault(); document.getElementById(`station-${index + 1}`)?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }); } : undefined}><span>{t('scroll')}</span><ArrowDown size={15} /></a>}
+        {index < panels.length - 1 && <a className="scroll-cue" href={`#station-${index + 1}`} onClick={isPublicCatalogue ? (event) => { event.preventDefault(); document.getElementById(`station-${index + 1}`)?.scrollIntoView({ behavior: 'smooth' }); } : undefined}><span>{t('scroll')}</span><ArrowDown size={15} /></a>}
       </div>
       <div className="image-credit"><span className="credit-mark" /><div><span className="credit-label">{t('photoCredit')}</span><a href={panel.creditUrl} target="_blank" rel="noreferrer">{panel.credit}</a><a className="license-link" href={panel.licenseUrl} target="_blank" rel="noreferrer">{panel.license}</a>{panel.note && <span className="photo-context">{panel.note}</span>}</div></div>
       <span className="panel-index" id={index > 0 ? `station-${index}` : undefined}>{panel.no} / 03</span>
@@ -783,9 +782,8 @@ function Ask() {
         {turns.map((turn, index) => <div className={`chat-turn chat-turn-${turn.role}`} key={`${turn.role}-${index}`}>
           {turn.role === 'assistant' && <span className="chat-avatar" aria-hidden="true">P</span>}
           <div className="chat-bubble">
-            {turn.error ? <ErrorNotice message={turn.content} /> : turn.indexedDocument ? <div className="chat-indexed-file"><FileText size={18} /><span><strong>{turn.indexedDocument.document.display_name}</strong><small>{turn.indexedDocument.duplicate ? t('fileAlreadyIndexed') : t('fileIndexed')} · {turn.indexedDocument.document.kind}</small></span></div> : turn.response?.answer != null ? <AssistantAnswer answer={turn.response.status === 'maintenance' ? t('assistantMaintenance') : turn.response.answer} sources={turn.response.sources} /> : <p>{turn.content}</p>}
-            {turn.response?.sources?.length ? <div className="chat-sources"><strong>{t('assistantSources')}</strong>{turn.response.sources.map((source, sourceIndex) => <div className="chat-source" key={`${source.document_name}-${source.citation}-${sourceIndex}`}><b>{source.citation}</b><span><SourceLink source={source} />{source.location && ` · ${source.location}`}</span><p>{source.excerpt}</p></div>)}</div> : null}
-            {turn.response?.search_suggestions && <iframe className="chat-search-suggestions" title="Search suggestions" sandbox="allow-popups allow-popups-to-escape-sandbox" referrerPolicy="no-referrer" srcDoc={'<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; style-src \'unsafe-inline\'; img-src https: data:">' + turn.response.search_suggestions} />}
+            {turn.error ? <ErrorNotice message={turn.content} /> : turn.indexedDocument ? <div className="chat-indexed-file"><FileText size={18} /><span><strong>{turn.indexedDocument.document.display_name}</strong><small>{turn.indexedDocument.duplicate ? t('fileAlreadyIndexed') : t('fileIndexed')} · {turn.indexedDocument.document.kind}</small></span></div> : turn.response?.answer != null ? <p className="chat-answer">{turn.response.status === 'maintenance' ? t('assistantMaintenance') : turn.response.answer}</p> : <p>{turn.content}</p>}
+            {turn.response?.sources?.length ? <div className="chat-sources"><strong>{t('assistantSources')}</strong>{turn.response.sources.map((source, sourceIndex) => <div className="chat-source" key={`${source.document_name}-${source.citation}-${sourceIndex}`}><b>{source.citation}</b><span>{source.document_name} · {source.location}</span><p>{source.excerpt}</p></div>)}</div> : null}
             {turn.response?.results?.length ? <div className="chat-passages">{turn.response.results.map((record) => <article className="chat-passage" key={`${record.id}-${record.page_no}`}><div className="result-top"><Provenance type={record.provenance} /><span>{t('page')} {record.page_no}</span></div><strong>{record.title}</strong><p><HighlightedSnippet text={record.snippet} /></p><Link to={`/records/${record.id}?page=${record.page_no || 1}&q=${encodeURIComponent(record.title)}`}>{t('openHighlighted')} <ArrowRight size={14} /></Link></article>)}</div> : null}
             {turn.response?.answer === null && !turn.response.results?.length ? <p className="chat-no-results">{t('noResults')}</p> : null}
             {turn.role === 'assistant' && turn.response?.answer != null && turn.response.status !== 'maintenance' && <button type="button" className="chat-copy-button" onClick={() => void copyAnswer(index, turn.response!.answer!)} title={copiedTurn === index ? t('copied') : t('copyReply')} aria-label={copiedTurn === index ? t('copied') : t('copyReply')}>{copiedTurn === index ? <Check size={14} /> : <Copy size={14} />}{copiedTurn === index && <span>{t('copied')}</span>}</button>}
@@ -802,7 +800,7 @@ function Ask() {
         {questionError && <p className="chat-input-error" id="question-error" role="alert">{questionError}</p>}
         {uploadError && <p className="chat-upload-error" role="alert">{uploadError}</p>}
         {upload.isPending && <p className="chat-upload-progress" role="status">{t('indexingFile', { name: upload.variables.name })}</p>}
-        <div className="chat-composer-hint" id="composer-hint"><span>{capabilities.data?.document_upload ? t('uploadHint') : t('composerHint')}</span><span>{draft.length}/1000</span></div>
+        <div className="chat-composer-hint" id="composer-hint"><span>{capabilities.data?.assistant ? t('uploadHint') : t('composerHint')}</span><span>{draft.length}/1000</span></div>
         <button className="button button-pop" type="submit" title={t('sendMessage')} aria-label={t('sendMessage')} disabled={!draft.trim() || assistant.isPending}><Send size={17} /></button>
       </form>
     </div>
